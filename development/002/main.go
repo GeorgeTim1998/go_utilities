@@ -8,24 +8,26 @@ import (
 )
 
 // Unpack выполняет распаковку строки по описанному в задании алгоритму.
-func Unpack(input string) (string, error) {
+func Unpack(input string) (string, bool, error) {
 	var result []rune      // создаем слайс рун под результат
 	runes := []rune(input) // представляем строку как слайс рун, чтобы правильно найти количество символов
 	length := len(runes)
+	hasEscape := false // флаг для передачи информации из функции о том, что были escape символы
 
 	for i := 0; i < length; i++ {
 		current := runes[i]
 
 		if unicode.IsDigit(current) { // если мы натыкаемся на число в строке, после переступания через предыдущее число, то это значит что формат строки не верный и надо вернуть ошибку
-			return "", errors.New("invalid string format")
+			return "", hasEscape, errors.New("invalid string format")
 		}
 
 		if current == '\\' { // наличие escape символа с последующим считается одним символом
+			hasEscape = true
 			if i+1 < length && (unicode.IsDigit(runes[i+1]) || runes[i+1] == '\\') { // проверяем что далее идет либо чило либо еще escape последовательность
 				current = runes[i+1] // если это верно, то вереходим к обработке следующего символа
 				i++
 			} else {
-				return "", errors.New("invalid escape sequence")
+				return "", hasEscape, errors.New("invalid escape sequence")
 			}
 		}
 
@@ -40,18 +42,20 @@ func Unpack(input string) (string, error) {
 		}
 	}
 
-	return string(result), nil
+	return string(result), hasEscape, nil
 }
 
 func main() {
 	testCases := []string{"a4bc2d5e", "abcd", "45", "", "qwe\\4\\5", "qwe\\45", "qwe\\\\5"}
 
 	for _, testCase := range testCases {
-		unpacked, err := Unpack(testCase)
+		unpacked, hasEscape, err := Unpack(testCase)
 		if err != nil {
-			fmt.Printf("Unpakced %q: %q (%v)\n", testCase, unpacked, err)
+			fmt.Printf("%q: %q (%v)\n", testCase, unpacked, err)
+		} else if hasEscape {
+			fmt.Printf("%q: %v (*)\n", testCase, unpacked) // напечатать результат без escape символов
 		} else {
-			fmt.Printf("Unpacked %q: %q\n", testCase, unpacked)
+			fmt.Printf("%q: %q\n", testCase, unpacked)
 		}
 	}
 }
