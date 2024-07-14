@@ -97,18 +97,18 @@ func sortLines(lines []string, k int, n, r bool) {
 	sort.Slice(lines, func(i, j int) bool {
 		if k > 0 {
 			// разбиваем строки на слова, используя пробелы как разделители
-			fields1 := strings.Fields(lines[i])
-			fields2 := strings.Fields(lines[j])
+			words1 := strings.Fields(lines[i])
+			words2 := strings.Fields(lines[j])
 
-			if len(fields1) >= k && len(fields2) >= k {
-				line1 := fields1[k-1]
-				line2 := fields2[k-1]
+			if len(words1) >= k && len(words2) >= k {
+				word1 := words1[k-1]
+				word2 := words2[k-1]
 
 				// сравниваем численные значения если -n передан
 				if n {
 					// возвращаем целое число которое было представлено строкой
-					num1, err1 := strconv.Atoi(line1)
-					num2, err2 := strconv.Atoi(line2)
+					num1, err1 := strconv.Atoi(word1)
+					num2, err2 := strconv.Atoi(word2)
 					if err1 != nil || err2 != nil {
 						fmt.Printf("Error converting to number\n")
 						os.Exit(1)
@@ -123,14 +123,14 @@ func sortLines(lines []string, k int, n, r bool) {
 
 				// сравниваем в обратном порядке если -r передан
 				if r {
-					return line1 > line2
+					return word1 > word2
 				}
-				return line1 < line2
+				return word1 < word2
 			}
 		} else if n {
 			// сравниваем численные значения если -n передан
-			line1, err1 := strconv.Atoi(lines[i])
-			line2, err2 := strconv.Atoi(lines[j])
+			word1, err1 := strconv.Atoi(lines[i])
+			word2, err2 := strconv.Atoi(lines[j])
 			if err1 != nil || err2 != nil {
 				fmt.Printf("Error converting to number\n")
 				os.Exit(1)
@@ -138,9 +138,9 @@ func sortLines(lines []string, k int, n, r bool) {
 
 			// сравниваем в обратном порядке если -r передан
 			if r {
-				return line1 > line2
+				return word1 > word2
 			}
-			return line1 < line2
+			return word1 < word2
 		} else {
 			// сравниваем целую строку если -k не передана
 			if r {
