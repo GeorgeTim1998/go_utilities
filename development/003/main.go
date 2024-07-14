@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -40,7 +39,7 @@ func main() {
 	}
 
 	// производим сортировку
-	sortLines(lines, *k, *n, *r, *u, *M, *b, *h)
+	sortLines(lines, *k, *n, *r, *u, *M, *b, *c, *h)
 
 	// выводим отсортированные строки
 	for _, line := range lines {
@@ -78,49 +77,107 @@ func readLines(filename string) ([]string, error) {
 }
 
 // sortLines sorts lines according to specified options
-func sortLines(lines []string, k int, n, r, u, M, b, h bool) {
+func sortLines(lines []string, k int, n, r, u, M, b, _, h bool) {
 	sort.Slice(lines, func(i, j int) bool {
-		// Implement sorting logic based on flags
+		// Extract the key for the specified column and process flags
+		keyI := getField(lines[i], k, b)
+		keyJ := getField(lines[j], k, b)
+
+		var less bool
 		if M {
 			// Sort by month name
-			return monthIndex(strings.Fields(lines[i])[k]) < monthIndex(strings.Fields(lines[j])[k])
+			less = monthIndex(keyI) < monthIndex(keyJ)
 		} else if n {
 			// Sort by numeric value
-			num1, err1 := strconv.Atoi(getField(lines[i], k, b))
-			num2, err2 := strconv.Atoi(getField(lines[j], k, b))
+			num1, err1 := strconv.Atoi(keyI)
+			num2, err2 := strconv.Atoi(keyJ)
 
 			if err1 == nil && err2 == nil {
-				return num1 < num2
+				less = num1 < num2
+			} else {
+				// Fallback to lexicographical order if conversion fails
+				less = keyI < keyJ
 			}
-			// Fallback to lexicographical order if conversion fails
-			return lines[i] < lines[j]
+		} else if h {
+			// Sort by numeric value with suffixes
+			num1, _ := parseHumanReadableNumber(keyI)
+			num2, _ := parseHumanReadableNumber(keyJ)
+			less = num1 < num2
 		} else {
 			// Default: lexicographical order
-			return lines[i] < lines[j]
+			less = keyI < keyJ
 		}
+
 		if r {
-			return !r
+			return !less
 		}
+		return less
 	})
+
+	// Remove duplicates if the -u flag is set
+	if u {
+		lines = unique(lines)
+	}
 }
 
-// getField returns the k-th field from a line based on delimiter and ignoring leading spaces if specified
-func getField(line string, k int, ignoreLeadingSpaces bool) string {
+// getField extracts the field for the specified column, ignoring leading/trailing spaces if -b is set
+func getField(line string, k int, b bool) string {
 	fields := strings.Fields(line)
-	if k >= len(fields) {
+	if k < 0 || k >= len(fields) {
 		return ""
 	}
-	return fields[k]
+	field := fields[k]
+	if b {
+		field = strings.TrimSpace(field)
+	}
+	return field
 }
 
-// monthIndex returns the index of a month name in time.Month
-func monthIndex(monthName string) int {
-	for i := 1; i <= 12; i++ {
-		if monthName == time.Month(i).String() {
-			return i
+// monthIndex converts a month name to an index (0 for January, 11 for December)
+func monthIndex(month string) int {
+	months := map[string]int{
+		"January": 0, "February": 1, "March": 2, "April": 3,
+		"May": 4, "June": 5, "July": 6, "August": 7,
+		"September": 8, "October": 9, "November": 10, "December": 11,
+	}
+	return months[month]
+}
+
+// parseHumanReadableNumber converts a human-readable number with suffixes to an integer
+func parseHumanReadableNumber(s string) (int64, error) {
+	multipliers := map[byte]int64{
+		'K': 1 << 10,
+		'M': 1 << 20,
+		'G': 1 << 30,
+		'T': 1 << 40,
+	}
+	if len(s) == 0 {
+		return 0, fmt.Errorf("invalid number")
+	}
+	n := len(s)
+	lastChar := s[n-1]
+	multiplier, hasSuffix := multipliers[lastChar]
+	if hasSuffix {
+		value, err := strconv.ParseInt(s[:n-1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		return value * multiplier, nil
+	}
+	return strconv.ParseInt(s, 10, 64)
+}
+
+// unique removes duplicate lines
+func unique(lines []string) []string {
+	uniqueLines := []string{}
+	lineMap := map[string]struct{}{}
+	for _, line := range lines {
+		if _, exists := lineMap[line]; !exists {
+			lineMap[line] = struct{}{}
+			uniqueLines = append(uniqueLines, line)
 		}
 	}
-	return 0
+	return uniqueLines
 }
 
 // writeLines записывает итоговые данные в файл
