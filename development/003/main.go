@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// Parse command-line arguments
+	// определяем допустимые при вызове программы флаги с их описанием
 	k := flag.Int("k", 0, "column for sorting")
 	n := flag.Bool("n", false, "sort by numeric value")
 	r := flag.Bool("r", false, "reverse the result of comparisons")
@@ -22,37 +22,39 @@ func main() {
 	c := flag.Bool("c", false, "check if sorted")
 	h := flag.Bool("h", false, "sort by numeric value with suffixes")
 
+	// парсим флаги. информация о них попадет в флаги определенные выше
 	flag.Parse()
 
-	// Read input file
+	// проверяем что передали input файл при вызове программы
 	if flag.NArg() == 0 {
 		fmt.Println("Usage: sort -k <column> -n -r -u -M -b -c -h <filename>")
 		os.Exit(1)
 	}
 	filename := flag.Args()[0]
 
+	// считываем строчки из переданного файла
 	lines, err := readLines(filename)
 	if err != nil {
 		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Sort lines
+	// производим сортировку
 	sortLines(lines, *k, *n, *r, *u, *M, *b, *h)
 
-	// Output sorted lines
+	// выводим отсортированные строки
 	for _, line := range lines {
 		fmt.Println(line)
 	}
 
-	// Write sorted lines back to file
+	// записываем отсортированные строки в файл
 	if err := writeLines("done"+filename, lines); err != nil {
 		fmt.Printf("Error writing sorted lines to file: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-// readLines reads a file and returns lines as []string
+// readLines читает файл и возвращает строки  виде слайса []string
 func readLines(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -61,10 +63,14 @@ func readLines(filename string) ([]string, error) {
 	defer file.Close()
 
 	var lines []string
+
+	// скинируем файл построчно
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+
+	// проверяем наличие ошибок
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
@@ -117,14 +123,16 @@ func monthIndex(monthName string) int {
 	return 0
 }
 
-// writeLines writes lines to a file
+// writeLines записывает итоговые данные в файл
 func writeLines(filename string, lines []string) error {
+	// создаем новый файл для записи в него
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
+	//записываем данные в файл и проверяем наличие ошибок
 	writer := bufio.NewWriter(file)
 	for _, line := range lines {
 		_, err := writer.WriteString(line + "\n")
