@@ -109,9 +109,15 @@ func sortLines(lines []string, k int, n, r bool) {
 					// возвращаем целое число которое было представлено строкой
 					num1, err1 := strconv.Atoi(line1)
 					num2, err2 := strconv.Atoi(line2)
-					if err1 == nil && err2 == nil {
-						line1 = strconv.Itoa(num1)
-						line2 = strconv.Itoa(num2)
+					if err1 != nil || err2 != nil {
+						fmt.Printf("Error converting to number\n")
+						os.Exit(1)
+					} else {
+						if r {
+							return num2 < num1
+						} else {
+							return num1 < num2
+						}
 					}
 				}
 
