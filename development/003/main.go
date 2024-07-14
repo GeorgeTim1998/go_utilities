@@ -37,7 +37,7 @@ func main() {
 	// производим сортировку
 	sortLines(lines, *k, *n, *r)
 
-	// бираем дубликаты если -u передан
+	// убираем дубликаты если -u передан
 	if *u {
 		lines = removeDuplicates(lines)
 	}
@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// записываем отсортированные строки в файл
-	if err := writeLines("done"+filename, lines); err != nil {
+	if err := writeLines(filename, lines); err != nil {
 		fmt.Printf("Error writing sorted lines to file: %v\n", err)
 		os.Exit(1)
 	}
