@@ -77,7 +77,7 @@ func readLines(filename string) ([]string, error) {
 	return lines, nil
 }
 
-// бирает дубликаты строк
+// бирает дубликаты строк с использоавнием карты
 func removeDuplicates(lines []string) []string {
 	seen := make(map[string]bool)
 	result := []string{}
