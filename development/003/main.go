@@ -106,6 +106,7 @@ func sortLines(lines []string, k int, n, r bool) {
 
 				// сравниваем численные значения если -n передан
 				if n {
+					// возвращаем целое число которое было представлено строкой
 					num1, err1 := strconv.Atoi(line1)
 					num2, err2 := strconv.Atoi(line2)
 					if err1 == nil && err2 == nil {
@@ -120,12 +121,27 @@ func sortLines(lines []string, k int, n, r bool) {
 				}
 				return line1 < line2
 			}
+		} else if n {
+			// сравниваем численные значения если -n передан
+			line1, err1 := strconv.Atoi(lines[i])
+			line2, err2 := strconv.Atoi(lines[j])
+			if err1 != nil || err2 != nil {
+				fmt.Printf("Error converting to number\n")
+				os.Exit(1)
+			}
+
+			// сравниваем в обратном порядке если -r передан
+			if r {
+				return line1 > line2
+			}
+			return line1 < line2
+		} else {
+			// сравниваем целую строку если -k не передана
+			if r {
+				return lines[i] > lines[j]
+			}
 		}
 
-		// сравниваем целую строку если -k не передана
-		if r {
-			return lines[i] > lines[j]
-		}
 		return lines[i] < lines[j]
 	})
 }
