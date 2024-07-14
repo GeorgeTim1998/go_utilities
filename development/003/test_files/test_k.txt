@@ -1,0 +1,4 @@
+apple orange banana grape
+dog cat mouse bird
+red blue green yellow
+car bike truck bus
