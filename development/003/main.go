@@ -12,21 +12,17 @@ import (
 
 func main() {
 	// определяем допустимые при вызове программы флаги с их описанием
-	k := flag.Int("k", 0, "column for sorting")
+	k := flag.Int("k", 0, "column for sorting (default is entire line)")
 	n := flag.Bool("n", false, "sort by numeric value")
 	r := flag.Bool("r", false, "reverse the result of comparisons")
 	u := flag.Bool("u", false, "suppress duplicate lines")
-	M := flag.Bool("M", false, "sort by month name")
-	b := flag.Bool("b", false, "ignore leading blanks")
-	c := flag.Bool("c", false, "check if sorted")
-	h := flag.Bool("h", false, "sort by numeric value with suffixes")
 
 	// парсим флаги. информация о них попадет в флаги определенные выше
 	flag.Parse()
 
 	// проверяем что передали input файл при вызове программы
 	if flag.NArg() == 0 {
-		fmt.Println("Usage: sort -k <column> -n -r -u -M -b -c -h <filename>")
+		fmt.Println("Usage: sort -k <column> -n -r -u <filename>")
 		os.Exit(1)
 	}
 	filename := flag.Args()[0]
@@ -39,7 +35,12 @@ func main() {
 	}
 
 	// производим сортировку
-	sortLines(lines, *k, *n, *r, *u, *M, *b, *c, *h)
+	sortLines(lines, *k, *n, *r)
+
+	// бираем дубликаты если -u передан
+	if *u {
+		lines = removeDuplicates(lines)
+	}
 
 	// выводим отсортированные строки
 	for _, line := range lines {
@@ -53,7 +54,7 @@ func main() {
 	}
 }
 
-// readLines читает файл и возвращает строки  виде слайса []string
+// readLines читает файл и возвращает строки виде слайса []string
 func readLines(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -76,108 +77,58 @@ func readLines(filename string) ([]string, error) {
 	return lines, nil
 }
 
-// sortLines sorts lines according to specified options
-func sortLines(lines []string, k int, n, r, u, M, b, _, h bool) {
-	sort.Slice(lines, func(i, j int) bool {
-		// Extract the key for the specified column and process flags
-		keyI := getField(lines[i], k, b)
-		keyJ := getField(lines[j], k, b)
+// бирает дубликаты строк
+func removeDuplicates(lines []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
 
-		var less bool
-		if M {
-			// Sort by month name
-			less = monthIndex(keyI) < monthIndex(keyJ)
-		} else if n {
-			// Sort by numeric value
-			num1, err1 := strconv.Atoi(keyI)
-			num2, err2 := strconv.Atoi(keyJ)
-
-			if err1 == nil && err2 == nil {
-				less = num1 < num2
-			} else {
-				// Fallback to lexicographical order if conversion fails
-				less = keyI < keyJ
-			}
-		} else if h {
-			// Sort by numeric value with suffixes
-			num1, _ := parseHumanReadableNumber(keyI)
-			num2, _ := parseHumanReadableNumber(keyJ)
-			less = num1 < num2
-		} else {
-			// Default: lexicographical order
-			less = keyI < keyJ
-		}
-
-		if r {
-			return !less
-		}
-		return less
-	})
-
-	// Remove duplicates if the -u flag is set
-	if u {
-		lines = unique(lines)
-	}
-}
-
-// getField extracts the field for the specified column, ignoring leading/trailing spaces if -b is set
-func getField(line string, k int, b bool) string {
-	fields := strings.Fields(line)
-	if k < 0 || k >= len(fields) {
-		return ""
-	}
-	field := fields[k]
-	if b {
-		field = strings.TrimSpace(field)
-	}
-	return field
-}
-
-// monthIndex converts a month name to an index (0 for January, 11 for December)
-func monthIndex(month string) int {
-	months := map[string]int{
-		"January": 0, "February": 1, "March": 2, "April": 3,
-		"May": 4, "June": 5, "July": 6, "August": 7,
-		"September": 8, "October": 9, "November": 10, "December": 11,
-	}
-	return months[month]
-}
-
-// parseHumanReadableNumber converts a human-readable number with suffixes to an integer
-func parseHumanReadableNumber(s string) (int64, error) {
-	multipliers := map[byte]int64{
-		'K': 1 << 10,
-		'M': 1 << 20,
-		'G': 1 << 30,
-		'T': 1 << 40,
-	}
-	if len(s) == 0 {
-		return 0, fmt.Errorf("invalid number")
-	}
-	n := len(s)
-	lastChar := s[n-1]
-	multiplier, hasSuffix := multipliers[lastChar]
-	if hasSuffix {
-		value, err := strconv.ParseInt(s[:n-1], 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		return value * multiplier, nil
-	}
-	return strconv.ParseInt(s, 10, 64)
-}
-
-// unique removes duplicate lines
-func unique(lines []string) []string {
-	uniqueLines := []string{}
-	lineMap := map[string]struct{}{}
 	for _, line := range lines {
-		if _, exists := lineMap[line]; !exists {
-			lineMap[line] = struct{}{}
-			uniqueLines = append(uniqueLines, line)
+		if !seen[line] {
+			seen[line] = true
+			result = append(result, line)
 		}
 	}
-	return uniqueLines
+
+	return result
+}
+
+// sortLines сортирует строки с учетом переданных флагов
+func sortLines(lines []string, k int, n, r bool) {
+	sort.Slice(lines, func(i, j int) bool {
+		// Split lines into fields if column k is specified
+		if k > 0 {
+			fields1 := strings.Fields(lines[i]) // разбиваем строки на слова, используя пробелы как разделители
+			fields2 := strings.Fields(lines[j])
+
+			if len(fields1) >= k && len(fields2) >= k {
+				line1 := fields1[k-1]
+				line2 := fields2[k-1]
+
+				// Compare numeric values if -n flag is set
+				if n {
+					num1, err1 := strconv.Atoi(line1)
+					num2, err2 := strconv.Atoi(line2)
+					if err1 == nil && err2 == nil {
+						line1 = strconv.Itoa(num1)
+						line2 = strconv.Itoa(num2)
+					}
+				}
+
+				// Compare in reverse order if -r flag is set
+				if r {
+					return line1 > line2
+				}
+				return line1 < line2
+			}
+		}
+
+		// Default: lexicographical order
+		// Compare entire lines if no column is specified
+		if r {
+			return lines[i] > lines[j]
+		}
+		return lines[i] < lines[j]
+	})
 }
 
 // writeLines записывает итоговые данные в файл
