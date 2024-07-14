@@ -95,16 +95,16 @@ func removeDuplicates(lines []string) []string {
 // sortLines сортирует строки с учетом переданных флагов
 func sortLines(lines []string, k int, n, r bool) {
 	sort.Slice(lines, func(i, j int) bool {
-		// Split lines into fields if column k is specified
 		if k > 0 {
-			fields1 := strings.Fields(lines[i]) // разбиваем строки на слова, используя пробелы как разделители
+			// разбиваем строки на слова, используя пробелы как разделители
+			fields1 := strings.Fields(lines[i])
 			fields2 := strings.Fields(lines[j])
 
 			if len(fields1) >= k && len(fields2) >= k {
 				line1 := fields1[k-1]
 				line2 := fields2[k-1]
 
-				// Compare numeric values if -n flag is set
+				// сравниваем численные значения если -n передан
 				if n {
 					num1, err1 := strconv.Atoi(line1)
 					num2, err2 := strconv.Atoi(line2)
@@ -114,7 +114,7 @@ func sortLines(lines []string, k int, n, r bool) {
 					}
 				}
 
-				// Compare in reverse order if -r flag is set
+				// сравниваем в обратном порядке если -r передан
 				if r {
 					return line1 > line2
 				}
@@ -122,8 +122,7 @@ func sortLines(lines []string, k int, n, r bool) {
 			}
 		}
 
-		// Default: lexicographical order
-		// Compare entire lines if no column is specified
+		// сравниваем целую строку если -k не передана
 		if r {
 			return lines[i] > lines[j]
 		}
@@ -140,7 +139,7 @@ func writeLines(filename string, lines []string) error {
 	}
 	defer file.Close()
 
-	//записываем данные в файл и проверяем наличие ошибок
+	// записываем данные в файл и проверяем наличие ошибок
 	writer := bufio.NewWriter(file)
 	for _, line := range lines {
 		_, err := writer.WriteString(line + "\n")
