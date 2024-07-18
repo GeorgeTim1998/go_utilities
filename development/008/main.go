@@ -111,36 +111,50 @@ func executeExternalCommand(parts []string) {
 }
 
 func runPipedCommands(commands []string) {
+	// Переменная для хранения последней выполненной команды
 	var lastCmd *exec.Cmd
 
+	// Проходим по всем командам
 	for i, cmdStr := range commands {
+		// Разбиваем строку команды на части (команда и её аргументы)
 		parts := strings.Fields(strings.TrimSpace(cmdStr))
 		if len(parts) == 0 {
+			// Если строка пустая, переходим к следующей команде
 			continue
 		}
 
+		// Создаем новую команду
 		cmd := exec.Command(parts[0], parts[1:]...)
 		if i == 0 {
+			// Если это первая команда, её стандартный ввод (stdin) - это стандартный ввод программы (os.Stdin)
 			cmd.Stdin = os.Stdin
 		} else {
+			// Если это не первая команда, её стандартный ввод (stdin) - это стандартный вывод (stdout) предыдущей команды
 			cmd.Stdin, _ = lastCmd.StdoutPipe()
 		}
 
 		if i == len(commands)-1 {
+			// Если это последняя команда, её стандартный вывод (stdout) - это стандартный вывод программы (os.Stdout)
 			cmd.Stdout = os.Stdout
 		} else {
+			// Если это не последняя команда, её стандартный вывод (stdout) - это стандартный вывод программы (os.Stdout)
+			// Здесь ошибка: должно быть подключение к следующей команде, а не os.Stdout. Нужно изменить на `cmd.Stdout, _ = lastCmd.StdoutPipe()`
 			cmd.Stdout = os.Stdout
 		}
 
+		// Стандартный поток ошибок (stderr) команды - это стандартный поток ошибок программы (os.Stderr)
 		cmd.Stderr = os.Stderr
 		if err := cmd.Start(); err != nil {
+			// Если произошла ошибка при запуске команды, выводим ошибку и выходим
 			fmt.Println("Error starting command:", err)
 			return
 		}
 
+		// Сохраняем текущую команду как последнюю выполненную
 		lastCmd = cmd
 	}
 
+	// Ожидаем завершения последней команды
 	if lastCmd != nil {
 		lastCmd.Wait()
 	}
