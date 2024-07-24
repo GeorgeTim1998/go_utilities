@@ -11,6 +11,7 @@ import (
 
 // Функция для парсинга и валидации параметров события
 func ParseEvent(r *http.Request, event *calendar.Event) error {
+	// парсит форму переданную в теле POST запроса
 	err := r.ParseForm()
 	if err != nil {
 		return errors.New("не удалось распарсить форму")

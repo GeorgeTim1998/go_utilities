@@ -41,6 +41,7 @@ func UpdateEventHandler(w http.ResponseWriter, r *http.Request) {
 
 // Обработчик для удаления события
 func DeleteEventHandler(w http.ResponseWriter, r *http.Request) {
+	// парсит параметры, переданные в url запроса
 	eventID := r.URL.Query().Get("id")
 	if eventID == "" {
 		http.Error(w, "id не указан", http.StatusBadRequest)
