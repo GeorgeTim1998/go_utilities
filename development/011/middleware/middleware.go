@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"log"
@@ -7,7 +7,7 @@ import (
 )
 
 // Middleware для логирования запросов
-func loggingMiddleware(next http.Handler) http.Handler {
+func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		log.Printf("Запрос: %s %s", r.Method, r.URL.Path)

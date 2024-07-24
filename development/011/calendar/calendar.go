@@ -1,4 +1,4 @@
-package main
+package calendar
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ type Event struct {
 
 var calendar = make(map[string]Event)
 
-func createEvent(event Event) error {
+func CreateEvent(event Event) error {
 	if _, exists := calendar[event.ID]; exists {
 		return errors.New("событие уже существует")
 	}
@@ -22,7 +22,7 @@ func createEvent(event Event) error {
 	return nil
 }
 
-func updateEvent(event Event) error {
+func UpdateEvent(event Event) error {
 	if _, exists := calendar[event.ID]; !exists {
 		return errors.New("событие не найдено")
 	}
@@ -30,7 +30,7 @@ func updateEvent(event Event) error {
 	return nil
 }
 
-func deleteEvent(eventID string) error {
+func DeleteEvent(eventID string) error {
 	if _, exists := calendar[eventID]; !exists {
 		return errors.New("событие не найдено")
 	}
@@ -38,7 +38,7 @@ func deleteEvent(eventID string) error {
 	return nil
 }
 
-func getEventsForDay(date time.Time) ([]Event, error) {
+func GetEventsForDay(date time.Time) ([]Event, error) {
 	var events []Event
 	for _, event := range calendar {
 		if event.Date.Year() == date.Year() && event.Date.YearDay() == date.YearDay() {
@@ -48,7 +48,7 @@ func getEventsForDay(date time.Time) ([]Event, error) {
 	return events, nil
 }
 
-func getEventsForWeek(date time.Time) ([]Event, error) {
+func GetEventsForWeek(date time.Time) ([]Event, error) {
 	var events []Event
 	year, week := date.ISOWeek()
 	for _, event := range calendar {
@@ -60,7 +60,7 @@ func getEventsForWeek(date time.Time) ([]Event, error) {
 	return events, nil
 }
 
-func getEventsForMonth(date time.Time) ([]Event, error) {
+func GetEventsForMonth(date time.Time) ([]Event, error) {
 	var events []Event
 	for _, event := range calendar {
 		if event.Date.Year() == date.Year() && event.Date.Month() == date.Month() {

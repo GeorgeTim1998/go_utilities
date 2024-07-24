@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	"011/calendar"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 )
 
 // Функция для парсинга и валидации параметров события
-func parseEvent(r *http.Request, event *Event) error {
+func ParseEvent(r *http.Request, event *calendar.Event) error {
 	err := r.ParseForm()
 	if err != nil {
 		return errors.New("не удалось распарсить форму")
@@ -30,7 +31,7 @@ func parseEvent(r *http.Request, event *Event) error {
 }
 
 // Функция для отправки JSON-ответа
-func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+func RespondJSON(w http.ResponseWriter, status int, payload interface{}) {
 	response, err := json.Marshal(payload)
 	if err != nil {
 		http.Error(w, "не удалось сериализовать ответ", http.StatusInternalServerError)
