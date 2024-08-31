@@ -36,6 +36,13 @@ type MyRedis struct {
 	cap   int
 }
 
+func NewMyRedis(cap int) *MyRedis {
+	return &MyRedis{
+		cache: make(map[string]int, cap),
+		cap:   cap,
+	}
+}
+
 func (my_redis *MyRedis) Cap() int {
 	return my_redis.cap
 }
@@ -88,7 +95,7 @@ func (my_redis *MyRedis) deleteAfterTTL(key string, ttl time.Duration) {
 }
 
 func main() {
-	my_redis := MyRedis{mu: sync.Mutex{}, cache: make(map[string]int), cap: 4}
+	my_redis := NewMyRedis(4)
 
 	my_redis.AddWithTTL("a", 1, 5*time.Second)
 
