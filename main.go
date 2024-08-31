@@ -72,9 +72,6 @@ func (my_redis *MyRedis) Remove(key string) {
 }
 
 func (my_redis *MyRedis) AddWithTTL(key string, value int, ttl time.Duration) {
-	my_redis.mu.Lock()
-	defer my_redis.mu.Unlock()
-
 	my_redis.Add(key, value)
 	my_redis.deleteAfterTTL(key, ttl)
 }
@@ -85,16 +82,24 @@ func (my_redis *MyRedis) deleteAfterTTL(key string, ttl time.Duration) {
 	go func() {
 		defer cancel()
 
-		for range ctx.Done() {
-			my_redis.Remove(key)
-			return
-		}
+		<-ctx.Done()
+		my_redis.Remove(key)
 	}()
 }
 
 func main() {
 	my_redis := MyRedis{mu: sync.Mutex{}, cache: make(map[string]int), cap: 4}
 
+	my_redis.AddWithTTL("a", 1, 5*time.Second)
+
+	for i := 0; i < 1000; i++ {
+		value, ok := my_redis.Get("a")
+		fmt.Println(value, ok)
+		time.Sleep(time.Second)
+	}
+}
+
+func test_concurrency(my_redis *MyRedis) {
 	wg := sync.WaitGroup{}
 	attempts := 1000
 
