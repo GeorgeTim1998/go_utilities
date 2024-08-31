@@ -48,6 +48,9 @@ func (my_redis *MyRedis) Cap() int {
 }
 
 func (my_redis *MyRedis) Len() int {
+	my_redis.mu.Lock()
+	defer my_redis.mu.Unlock()
+
 	return len(my_redis.cache)
 }
 
@@ -55,7 +58,7 @@ func (my_redis *MyRedis) Clear() {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
-	my_redis.cache = make(map[string]int, my_redis.cap)
+	my_redis.cache = make(map[string]int, my_redis.cap) // what is faster: this or one by one?
 }
 
 func (my_redis *MyRedis) Add(key string, value int) {
