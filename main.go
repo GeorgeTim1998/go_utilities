@@ -52,7 +52,10 @@ func (my_redis *MyRedis) Len() int {
 }
 
 func (my_redis *MyRedis) Clear() {
-	my_redis.cache = make(map[string]int)
+	my_redis.mu.Lock()
+	defer my_redis.mu.Unlock()
+
+	my_redis.cache = make(map[string]int, my_redis.cap)
 }
 
 func (my_redis *MyRedis) Add(key string, value int) {
