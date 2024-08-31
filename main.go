@@ -24,22 +24,28 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
 )
 
+type CacheItem struct {
+	value      int
+	expiration *time.Time
+}
+
 type MyRedis struct {
 	mu    sync.Mutex
-	cache map[string]int
+	cache map[string]CacheItem
 	cap   int
+	order []string
 }
 
 func NewMyRedis(cap int) *MyRedis {
 	return &MyRedis{
-		cache: make(map[string]int, cap),
+		cache: make(map[string]CacheItem, cap),
 		cap:   cap,
+		order: make([]string, 0, cap),
 	}
 }
 
@@ -57,24 +63,39 @@ func (my_redis *MyRedis) Len() int {
 func (my_redis *MyRedis) Clear() {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
-
-	my_redis.cache = make(map[string]int, my_redis.cap) // what is faster: this or one by one?
+	my_redis.cache = make(map[string]CacheItem, my_redis.cap) // What is faster: make new or delete by key
+	my_redis.order = make([]string, 0, my_redis.cap)
 }
 
 func (my_redis *MyRedis) Add(key string, value int) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
-	my_redis.cache[key] = value
+	if _, exists := my_redis.cache[key]; exists {
+		my_redis.removeFromOrder(key)
+	}
+
+	my_redis.cache[key] = CacheItem{value: value, expiration: nil}
+	my_redis.order = append(my_redis.order, key)
+
+	if len(my_redis.cache) > my_redis.cap {
+		my_redis.evictLRU()
+	}
 }
 
 func (my_redis *MyRedis) Get(key string) (int, bool) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
-	value, ok := my_redis.cache[key]
+	item, exists := my_redis.cache[key]
+	if !exists || (item.expiration != nil && time.Now().After(*item.expiration)) {
+		return 0, false
+	}
 
-	return value, ok
+	my_redis.removeFromOrder(key)
+	my_redis.order = append(my_redis.order, key)
+
+	return item.value, true
 }
 
 func (my_redis *MyRedis) Remove(key string) {
@@ -82,22 +103,43 @@ func (my_redis *MyRedis) Remove(key string) {
 	defer my_redis.mu.Unlock()
 
 	delete(my_redis.cache, key)
+	my_redis.removeFromOrder(key)
 }
 
 func (my_redis *MyRedis) AddWithTTL(key string, value int, ttl time.Duration) {
-	my_redis.Add(key, value)
-	my_redis.deleteAfterTTL(key, ttl)
+	my_redis.mu.Lock()
+	defer my_redis.mu.Unlock()
+
+	expiration := time.Now().Add(ttl)
+
+	if _, exists := my_redis.cache[key]; exists {
+		my_redis.removeFromOrder(key)
+	}
+
+	my_redis.cache[key] = CacheItem{value: value, expiration: &expiration}
+	my_redis.order = append(my_redis.order, key)
+
+	if len(my_redis.cache) > my_redis.cap {
+		my_redis.evictLRU()
+	}
 }
 
-func (my_redis *MyRedis) deleteAfterTTL(key string, ttl time.Duration) {
-	ctx, cancel := context.WithTimeout(context.Background(), ttl)
+func (my_redis *MyRedis) removeFromOrder(key string) {
+	for i, k := range my_redis.order {
+		if k == key {
+			my_redis.order = append(my_redis.order[:i], my_redis.order[i+1:]...)
+			break
+		}
+	}
+}
 
-	go func() {
-		defer cancel()
+func (my_redis *MyRedis) evictLRU() {
+	if len(my_redis.order) == 0 {
+		return
+	}
 
-		<-ctx.Done()
-		my_redis.Remove(key)
-	}()
+	lruKey := my_redis.order[0]
+	my_redis.Remove(lruKey)
 }
 
 func main() {
