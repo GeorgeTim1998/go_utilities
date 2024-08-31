@@ -94,7 +94,26 @@ func (my_redis *MyRedis) deleteAfterTTL(key string, ttl time.Duration) {
 
 func main() {
 	my_redis := MyRedis{mu: sync.Mutex{}, cache: make(map[string]int), cap: 4}
-	my_redis.cache["a"] = 1
 
-	fmt.Println(my_redis.Len())
+	wg := sync.WaitGroup{}
+	attempts := 1000
+
+	wg.Add(2 * attempts)
+	for i := 0; i < 1000; i++ {
+		go func() {
+			defer wg.Done()
+			fmt.Print("a")
+			my_redis.Add("a", 1)
+		}()
+	}
+
+	for i := 0; i < 1000; i++ {
+		go func() {
+			defer wg.Done()
+			fmt.Print("b")
+			my_redis.Remove("a")
+		}()
+	}
+
+	wg.Wait()
 }
