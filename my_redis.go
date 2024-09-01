@@ -115,5 +115,7 @@ func (my_redis *MyRedis) evictLRU() {
 	}
 
 	lruKey := my_redis.order[0]
-	my_redis.Remove(lruKey)
+
+	delete(my_redis.cache, lruKey)
+	my_redis.removeFromOrder(lruKey)
 }
