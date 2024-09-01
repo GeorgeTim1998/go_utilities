@@ -25,22 +25,31 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
+
+	"main/my_redis"
 )
 
 func main() {
-	my_redis := NewMyRedis(4)
+	myRedis := my_redis.NewMyRedis(2)
 
-	my_redis.AddWithTTL("a", 1, 5*time.Second)
+	myRedis.Add("a", 1)
+	myRedis.Add("b", 2)
+	myRedis.Add("c", 3) // This should evict "a"
 
-	for i := 0; i < 1000; i++ {
-		value, ok := my_redis.Get("a")
-		fmt.Println(value, ok)
-		time.Sleep(time.Second)
+	if _, ok := myRedis.Get("a"); ok {
+		fmt.Printf("expected key 'a' to be evicted\n")
+	}
+
+	if value, ok := myRedis.Get("b"); !ok || value != 2 {
+		fmt.Printf("expected key 'b' to have value 2, got %d\n", value)
+	}
+
+	if value, ok := myRedis.Get("c"); !ok || value != 3 {
+		fmt.Printf("expected key 'c' to have value 3, got %d\n", value)
 	}
 }
 
-func test_concurrency(my_redis *MyRedis) {
+func test_concurrency(my_redis *my_redis.MyRedis) {
 	wg := sync.WaitGroup{}
 	attempts := 1000
 
