@@ -6,22 +6,22 @@ import (
 )
 
 type CacheItem struct {
-	value      int
+	value      interface{}
 	expiration *time.Time
 }
 
 type MyRedis struct {
 	mu    sync.Mutex
-	cache map[string]CacheItem
+	cache map[interface{}]CacheItem
 	cap   int
-	order []string
+	order []interface{}
 }
 
 func NewMyRedis(cap int) *MyRedis {
 	return &MyRedis{
-		cache: make(map[string]CacheItem, cap),
+		cache: make(map[interface{}]CacheItem, cap),
 		cap:   cap,
-		order: make([]string, 0, cap),
+		order: make([]interface{}, 0, cap),
 	}
 }
 
@@ -39,11 +39,11 @@ func (my_redis *MyRedis) Len() int {
 func (my_redis *MyRedis) Clear() {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
-	my_redis.cache = make(map[string]CacheItem, my_redis.cap) // What is faster: make new or delete by key
-	my_redis.order = make([]string, 0, my_redis.cap)
+	my_redis.cache = make(map[interface{}]CacheItem, my_redis.cap)
+	my_redis.order = make([]interface{}, 0, my_redis.cap)
 }
 
-func (my_redis *MyRedis) Add(key string, value int) {
+func (my_redis *MyRedis) Add(key, value interface{}) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
@@ -59,13 +59,13 @@ func (my_redis *MyRedis) Add(key string, value int) {
 	}
 }
 
-func (my_redis *MyRedis) Get(key string) (int, bool) {
+func (my_redis *MyRedis) Get(key interface{}) (interface{}, bool) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
 	item, exists := my_redis.cache[key]
 	if !exists || (item.expiration != nil && time.Now().After(*item.expiration)) {
-		return 0, false
+		return nil, false
 	}
 
 	my_redis.removeFromOrder(key)
@@ -74,7 +74,7 @@ func (my_redis *MyRedis) Get(key string) (int, bool) {
 	return item.value, true
 }
 
-func (my_redis *MyRedis) Remove(key string) {
+func (my_redis *MyRedis) Remove(key interface{}) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
@@ -82,7 +82,7 @@ func (my_redis *MyRedis) Remove(key string) {
 	my_redis.removeFromOrder(key)
 }
 
-func (my_redis *MyRedis) AddWithTTL(key string, value int, ttl time.Duration) {
+func (my_redis *MyRedis) AddWithTTL(key, value interface{}, ttl time.Duration) {
 	my_redis.mu.Lock()
 	defer my_redis.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (my_redis *MyRedis) AddWithTTL(key string, value int, ttl time.Duration) {
 	}
 }
 
-func (my_redis *MyRedis) removeFromOrder(key string) {
+func (my_redis *MyRedis) removeFromOrder(key interface{}) {
 	for i, k := range my_redis.order {
 		if k == key {
 			my_redis.order = append(my_redis.order[:i], my_redis.order[i+1:]...)
