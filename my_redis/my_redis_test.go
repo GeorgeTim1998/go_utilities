@@ -71,7 +71,7 @@ func TestEviction(t *testing.T) {
 
 	myRedis.Add("a", 1)
 	myRedis.Add("b", 2)
-	myRedis.Add("c", 3) // This should evict "a"
+	myRedis.Add("c", 3)
 
 	if _, ok := myRedis.Get("a"); ok {
 		t.Errorf("expected key 'a' to be evicted")
