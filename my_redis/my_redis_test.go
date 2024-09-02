@@ -70,6 +70,17 @@ func TestAddWithDifferentTTL(t *testing.T) {
 	}
 }
 
+func TestAddWithNoTTL(t *testing.T) {
+	myRedis := NewMyRedis(2)
+	myRedis.AddWithTTL("a", 1, 500*time.Microsecond)
+	myRedis.Add("a", 1)
+
+	time.Sleep(700 * time.Microsecond)
+	if _, ok := myRedis.Get("a"); !ok {
+		t.Errorf("expected key 'a' to be present")
+	}
+}
+
 func TestAnyKeyAndValueAddWithTTL(t *testing.T) {
 	myRedis := NewMyRedis(5)
 
