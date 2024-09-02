@@ -85,9 +85,13 @@ func TestAnyKeyAndValueAddWithTTL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		myRedis.AddWithTTL(tt.key, tt.value, time.Microsecond)
+		myRedis.AddWithTTL(tt.key, tt.value, 500*time.Microsecond)
 
-		time.Sleep(2 * time.Microsecond)
+		if val, ok := myRedis.Get(tt.key); !ok || val != tt.value {
+			t.Errorf("Failed to get the correct value for key: %v, expected: %v, got: %v", tt.key, tt.value, val)
+		}
+
+		time.Sleep(700 * time.Microsecond)
 
 		if _, ok := myRedis.Get(tt.key); ok {
 			t.Errorf("expected key %v to be expired and removed", tt.key)
