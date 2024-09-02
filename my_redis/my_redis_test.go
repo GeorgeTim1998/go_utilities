@@ -18,6 +18,24 @@ func TestNewMyRedis(t *testing.T) {
 	}
 }
 
+func TestAddAndGet(t *testing.T) {
+	myRedis := NewMyRedis(4)
+	myRedis.Add("a", 1)
+
+	value, ok := myRedis.Get("a")
+	if !ok {
+		t.Errorf("expected key 'a' to be present")
+	}
+	if value != 1 {
+		t.Errorf("expected value 1, got %d", value)
+	}
+
+	_, ok = myRedis.Get("b")
+	if ok {
+		t.Errorf("expected key 'b' to be abscent")
+	}
+}
+
 func TestAnyKeyAndValueAddAndGet(t *testing.T) {
 	myRedis := NewMyRedis(5)
 
