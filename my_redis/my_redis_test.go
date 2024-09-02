@@ -59,6 +59,17 @@ func TestAnyKeyAndValueAddAndGet(t *testing.T) {
 	}
 }
 
+func TestAddWithDifferentTTL(t *testing.T) {
+	myRedis := NewMyRedis(2)
+	myRedis.AddWithTTL("a", 1, time.Second)
+
+	myRedis.AddWithTTL("a", 1, time.Microsecond)
+	time.Sleep(2 * time.Microsecond)
+	if _, ok := myRedis.Get("a"); ok {
+		t.Errorf("expected key 'a' to be expired and removed")
+	}
+}
+
 func TestAnyKeyAndValueAddWithTTL(t *testing.T) {
 	myRedis := NewMyRedis(5)
 
@@ -74,9 +85,9 @@ func TestAnyKeyAndValueAddWithTTL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		myRedis.AddWithTTL(tt.key, tt.value, 1*time.Second)
+		myRedis.AddWithTTL(tt.key, tt.value, time.Microsecond)
 
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Microsecond)
 
 		if _, ok := myRedis.Get(tt.key); ok {
 			t.Errorf("expected key %v to be expired and removed", tt.key)
