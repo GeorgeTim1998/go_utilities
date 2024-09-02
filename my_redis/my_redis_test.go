@@ -18,16 +18,51 @@ func TestNewMyRedis(t *testing.T) {
 	}
 }
 
-func TestAddAndGet(t *testing.T) {
-	myRedis := NewMyRedis(4)
-	myRedis.Add("a", 1)
+func TestAnyKeyAndValueAddAndGet(t *testing.T) {
+	myRedis := NewMyRedis(5)
 
-	value, ok := myRedis.Get("a")
-	if !ok {
-		t.Errorf("expected key 'a' to be present")
+	tests := []struct {
+		key   interface{}
+		value interface{}
+	}{
+		{key: "string_key", value: "string_value"},
+		{key: 42, value: 100},
+		{key: 3.14, value: "pi"},
+		{key: true, value: false},
+		{key: struct{ Name string }{Name: "test"}, value: [3]int{1, 2, 3}},
 	}
-	if value != 1 {
-		t.Errorf("expected value 1, got %d", value)
+
+	for _, tt := range tests {
+		myRedis.Add(tt.key, tt.value)
+
+		if val, ok := myRedis.Get(tt.key); !ok || val != tt.value {
+			t.Errorf("Failed to get the correct value for key: %v, expected: %v, got: %v", tt.key, tt.value, val)
+		}
+	}
+}
+
+func TestAnyKeyAndValueAddWithTTL(t *testing.T) {
+	myRedis := NewMyRedis(5)
+
+	tests := []struct {
+		key   interface{}
+		value interface{}
+	}{
+		{key: "string_key", value: "string_value"},
+		{key: 42, value: 100},
+		{key: 3.14, value: "pi"},
+		{key: true, value: false},
+		{key: struct{ Name string }{Name: "test"}, value: [3]int{1, 2, 3}},
+	}
+
+	for _, tt := range tests {
+		myRedis.AddWithTTL(tt.key, tt.value, 1*time.Second)
+
+		time.Sleep(time.Second)
+
+		if _, ok := myRedis.Get(tt.key); ok {
+			t.Errorf("expected key %v to be expired and removed", tt.key)
+		}
 	}
 }
 
@@ -48,16 +83,6 @@ func TestEviction(t *testing.T) {
 
 	if value, ok := myRedis.Get("c"); !ok || value != 3 {
 		t.Errorf("expected key 'c' to have value 3, got %d", value)
-	}
-}
-
-func TestAddWithTTL(t *testing.T) {
-	myRedis := NewMyRedis(4)
-	myRedis.AddWithTTL("a", 1, 1*time.Second)
-
-	time.Sleep(2 * time.Second)
-	if _, ok := myRedis.Get("a"); ok {
-		t.Errorf("expected key 'a' to be expired and removed")
 	}
 }
 
