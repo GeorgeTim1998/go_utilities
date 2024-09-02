@@ -188,3 +188,30 @@ func TestConcurrentAccess(t *testing.T) {
 		t.Errorf("Expected cache to be empty after all operations, but got length %d", len(myRedis.cache))
 	}
 }
+
+func TestCacheBoundaryConditions(t *testing.T) {
+	capacity := 2
+	amountOfNumbers := 20
+	myRedis := NewMyRedis(capacity)
+
+	for i := 1; i <= amountOfNumbers; i++ {
+		myRedis.Add(i, i*2)
+	}
+
+	// check that last used keys 19 and 20 are present
+	if len(myRedis.cache) != capacity {
+		t.Errorf("Expected cache length to be equal to capacity")
+	}
+	for i := amountOfNumbers - capacity + 1; i <= amountOfNumbers; i++ {
+		if val, ok := myRedis.Get(i); !ok || val != i*2 {
+			t.Errorf("Failed to get the correct value for key: %v, expected: %v, got: %v", i, i*2, val)
+		}
+	}
+
+	// check that the other keys 1..18 are abscent
+	for i := 1; i <= amountOfNumbers-capacity; i++ {
+		if _, ok := myRedis.Get(i); ok {
+			t.Errorf("Expected key %v to be evicted", i-(capacity+10))
+		}
+	}
+}
