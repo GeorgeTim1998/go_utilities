@@ -1,6 +1,7 @@
 package my_redis
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -153,5 +154,37 @@ func TestClear(t *testing.T) {
 	myRedis.Add("c", 3)
 	if myRedis.Len() != 1 {
 		t.Errorf("expected length 1, got %d", myRedis.Len())
+	}
+}
+
+func TestConcurrentAccess(t *testing.T) {
+	var wg sync.WaitGroup
+
+	numGoroutines := 100
+	myRedis := NewMyRedis(numGoroutines)
+
+	wg.Add(numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer wg.Done()
+
+			myRedis.Add(id, id*2)
+
+			if val, ok := myRedis.Get(id); !ok || val != id*2 {
+				t.Errorf("Failed to get the correct value for key: %v, expected: %v, got: %v", id, id*2, val)
+			}
+
+			myRedis.Remove(id)
+
+			if _, ok := myRedis.Get(id); ok {
+				t.Errorf("Expected key %v to be removed", id)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	if len(myRedis.cache) != 0 {
+		t.Errorf("Expected cache to be empty after all operations, but got length %d", len(myRedis.cache))
 	}
 }
