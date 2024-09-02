@@ -71,7 +71,7 @@ func TestAddWithDifferentTTL(t *testing.T) {
 	}
 }
 
-func TestAddWithNoTTL(t *testing.T) {
+func TestSameKeyAddWithTTLAndThenAdd(t *testing.T) {
 	myRedis := NewMyRedis(2)
 	myRedis.AddWithTTL("a", 1, 500*time.Microsecond)
 	myRedis.Add("a", 1)
